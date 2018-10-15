@@ -1,16 +1,16 @@
 #ifndef _CAMERA_LCD_H_
 #define _CAMERA_LCD_H_
 
-/*
+
 #ifdef __cplusplus             //告诉编译器，这部分代码按C语言的格式进行编译，而不是C++的
 extern "C"
 {
 #endif
-*/
+
 
 
 //LCD
-#define CONFIG_USE_LCD	          1
+#define CONFIG_USE_LCD	          0
 #define CONFIG_HW_LCD_MISO_GPIO   25
 #define CONFIG_HW_LCD_MOSI_GPIO	  23
 #define CONFIG_HW_LCD_CLK_GPIO    19
@@ -29,16 +29,16 @@ void app_lcd_task(void *pvParameters);
 void lcd_init_wifi(void);
 void lcd_camera_init_complete(void);
 void lcd_wifi_connect_complete(void);
-void lcd_http_info(ip4_addr_t s_ip_addr);
+//void lcd_http_info(ip4_addr_t s_ip_addr);
 void app_lcd_init();
 
 #endif//end CONFIG_USE_LCD
 
-/*
+
 #ifdef __cplusplus
 }
 #endif   //end of __cpluscplus
-*/
+
 
 #endif
 

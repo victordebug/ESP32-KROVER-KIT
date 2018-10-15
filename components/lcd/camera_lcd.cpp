@@ -29,6 +29,7 @@
 #include "esp_log.h"
 #include "sdkconfig.h"
 #include "camera_lcd.h"
+#include "lcd_image.h"
 
 
 #if CONFIG_USE_LCD
@@ -47,7 +48,7 @@ void queue_send(uint8_t frame_num)
 {
     camera_evt_t camera_event;
     camera_event.frame_num = frame_num;
-    xQueueSend(camera_queue, &camera_event, portMAX_DELAY);
+    BaseType_t err = xQueueSend(camera_queue, &camera_event, portMAX_DELAY);
 }
 
 uint8_t queue_receive()
@@ -69,18 +70,29 @@ void app_lcd_task(void *pvParameters)
     camera_evt_t camera_event;
     camera_event.frame_num = 0;
     time = xTaskGetTickCount();
+
+
     while(1) 
 	{
-        xQueueReceive(camera_queue, &camera_event, portMAX_DELAY);
-        if((xTaskGetTickCount() - time) > 1000 / portTICK_RATE_MS )
+	   tft->drawBitmap(0, 0,(uint16_t *)pic2_320_240, 320, 240);
+	   //tft->drawBitmap(0, 0,(uint16_t *)Status_320_240, 320, 240);
+	   //tft->drawBitmap(0, 0, i > 150 ? (uint16_t *)pic1_320_240 : (uint16_t *)Status_320_240, 320, 240);
+	   
+        //BaseType_t err = xQueueReceive(camera_queue, &camera_event, portMAX_DELAY);
+	    //printf("xQueueReceive: err = %d\r\n",err);
+       /* if((xTaskGetTickCount() - time) > 1000 / portTICK_RATE_MS )
 		{
             ESP_LOGI(TAG,"app_lcd_task movie %d  fps", i);
             time = xTaskGetTickCount();
             i = 0;
         }
         i++;
-        // tft->drawBitmap(0, 0, (uint16_t *)camera_get_fb(camera_event.frame_num), camera_get_fb_width(), camera_get_fb_height(), false);
-        tft->drawBitmapnotswap(0, 0, (uint16_t *)camera_get_fb_i(camera_event.frame_num), camera_get_fb_width(), camera_get_fb_height());
+		tft->drawBitmap(0, 0, i > 150 ? (uint16_t *)pic1_320_240 : (uint16_t *)Status_320_240, 320, 240);*/
+		//printf("camera_get_fb_width:%d \t camera_get_fb_height:%d\r\n",camera_get_fb_width(), camera_get_fb_height());
+		//printf("camera_get_fb:%s\r\n",(uint8_t *)camera_get_fb());
+		
+		//tft->drawBitmap(0, 0, (uint16_t *)camera_get_fb(), 320, 240);
+        //tft->drawBitmapnotswap(0, 0, (uint16_t *)camera_get_fb_i(camera_event.frame_num), camera_get_fb_width(), camera_get_fb_height());
         // tft->drawBitmapnotswap(0, 0, (uint16_t *)camera_get_fb(0), camera_get_fb_width(), camera_get_fb_height());
     }
 }
@@ -113,7 +125,7 @@ void lcd_http_info(ip4_addr_t s_ip_addr)
 void app_lcd_init()
 {
     lcd_conf_t lcd_pins = {
-        .lcd_model = LCD_MOD_ILI9341,  //LCD_MOD_ILI9341,//LCD_MOD_ST7789,
+        .lcd_model = LCD_MOD_AUTO_DET,  //LCD_MOD_ILI9341,//LCD_MOD_ST7789,
         .pin_num_miso = CONFIG_HW_LCD_MISO_GPIO,
         .pin_num_mosi = CONFIG_HW_LCD_MOSI_GPIO,
         .pin_num_clk = CONFIG_HW_LCD_CLK_GPIO,
@@ -127,18 +139,22 @@ void app_lcd_init()
         .spi_host = HSPI_HOST,
         .init_spi_bus = true};
 
+
     /*Initialize SPI Handler*/
-    if (tft == NULL) {
+    if (tft == NULL) 
+	{
         tft = new CEspLcd(&lcd_pins);
         camera_queue = xQueueCreate(CAMERA_CACHE_NUM - 1, sizeof(camera_evt_t));
     }
-
+	
     /*screen initialize*/
     tft->invertDisplay(false);
     tft->setRotation(3);
     tft->fillScreen(COLOR_GREEN);
-    tft->drawBitmap(0, 0, esp_logo, 137, 26);
+    tft->drawBitmap(0, 0, esp_logo, 137, 26); //water_pic_35   brightness_pic_35  esp_logo
     tft->drawString("Status: Initialize camera ...", 5, 30);
+
+	ESP_LOGI("camera lcd","lcd init over");
 }
 
 

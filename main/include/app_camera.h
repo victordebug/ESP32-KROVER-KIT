@@ -50,30 +50,32 @@
 #define RGB565_MASK_GREEN      0x07E0
 #define RGB565_MASK_BLUE       0x001F
 
+
 /**
  * @breif call xSemaphoreTake to receive camera frame number
  */
-uint8_t queue_receive();
+//uint8_t queue_receive();
 
 /**
  * @breif call xSemaphoreGive to send camera frame number
  */
-void queue_send(uint8_t frame_num);
+//void queue_send(uint8_t frame_num);
 
-uint8_t queue_available();
+//uint8_t queue_available();
 
-void lcd_init_wifi(void);
+//void lcd_init_wifi(void);
 
-void lcd_camera_init_complete(void);
+//void lcd_camera_init_complete(void);
 
-void lcd_wifi_connect_complete(void);
+//void lcd_wifi_connect_complete(void);
 
-void lcd_http_info(ip4_addr_t s_ip_addr);
+//void lcd_http_info(ip4_addr_t s_ip_addr);
 
-void app_lcd_init(void);
+//void app_lcd_init(void);
 
-void app_lcd_task(void *pvParameters);
+//void app_lcd_task(void *pvParameters);
 
-void http_server_task(void *pvParameters);
+//void http_server_task(void *pvParameters);
+
 
 #endif

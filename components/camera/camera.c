@@ -46,6 +46,8 @@
 #include "camera.h"
 #include "camera_common.h"
 #include "xclk.h"
+#include "camera_lcd.h"
+
 #if CONFIG_OV2640_SUPPORT
 #include "ov2640.h"
 #endif
@@ -116,12 +118,14 @@ static size_t i2s_bytes_per_sample(i2s_sampling_mode_t mode)
 
 esp_err_t camera_probe(const camera_config_t* config, camera_model_t* out_camera_model)
 {
-    if (s_state != NULL) {
+	if (s_state != NULL) 
+	{
         return ESP_ERR_INVALID_STATE;
     }
 
     s_state = (camera_state_t*) calloc(sizeof(*s_state), 1);
-    if (!s_state) {
+    if (!s_state) 
+	{
         return ESP_ERR_NO_MEM;
     }
 
@@ -146,7 +150,8 @@ esp_err_t camera_probe(const camera_config_t* config, camera_model_t* out_camera
     /* Probe the sensor */
     delay(10);
     uint8_t slv_addr = SCCB_Probe();
-    if (slv_addr == 0) {
+    if (slv_addr == 0) 
+	{
         *out_camera_model = CAMERA_NONE;
         return ESP_ERR_CAMERA_NOT_DETECTED;
     }
@@ -166,7 +171,8 @@ esp_err_t camera_probe(const camera_config_t* config, camera_model_t* out_camera
     ESP_LOGD(TAG, "Camera PID=0x%02x VER=0x%02x MIDL=0x%02x MIDH=0x%02x",
             id->PID, id->VER, id->MIDH, id->MIDL);
 
-    switch (id->PID) {
+    switch (id->PID) 
+	{
 #if CONFIG_OV2640_SUPPORT
         case OV2640_PID:
             *out_camera_model = CAMERA_OV2640;
@@ -194,10 +200,12 @@ esp_err_t camera_probe(const camera_config_t* config, camera_model_t* out_camera
 
 esp_err_t camera_init(const camera_config_t* config)
 {
-    if (!s_state) {
+    if (!s_state) 
+	{
         return ESP_ERR_INVALID_STATE;
     }
-    if (s_state->sensor.id.PID == 0) {
+    if (s_state->sensor.id.PID == 0) 
+	{
         return ESP_ERR_CAMERA_NOT_SUPPORTED;
     }
     memcpy(&s_state->config, config, sizeof(*config));
@@ -210,7 +218,8 @@ esp_err_t camera_init(const camera_config_t* config)
     s_state->sensor.set_pixformat(&s_state->sensor, pix_format);
 
     ESP_LOGD(TAG, "Setting frame size to %dx%d", s_state->width, s_state->height);
-    if (s_state->sensor.set_framesize(&s_state->sensor, frame_size) != 0) {
+    if (s_state->sensor.set_framesize(&s_state->sensor, frame_size) != 0) 
+	{
         ESP_LOGE(TAG, "Failed to set frame size");
         err = ESP_ERR_CAMERA_FAILED_TO_SET_FRAME_SIZE; 
         goto fail;
@@ -357,10 +366,12 @@ fail:
 
 uint8_t* camera_get_fb()
 {
-    if (s_state == NULL) {
-        return NULL;
-    }
-    return s_state->fb;
+    //if (s_state == NULL) {
+    //    return NULL;
+    //}
+    //return s_state->fb;
+
+	return NULL;
 }
 
 uint32_t* camera_get_fb_i(uint8_t i)
@@ -408,12 +419,16 @@ esp_err_t camera_run()
     memset(s_state->fb, 0, s_state->fb_size);
 #endif // _NDEBUG
     i2s_run();
-    ESP_LOGD(TAG, "Waiting for frame");
+    //ESP_LOGD(TAG, "Waiting for frame");
     xSemaphoreTake(s_state->frame_ready, portMAX_DELAY);
     struct timeval tv_end;
     gettimeofday(&tv_end, NULL);
     int time_ms = (tv_end.tv_sec - tv_start.tv_sec) * 1000 + (tv_end.tv_usec - tv_start.tv_usec) / 1000;
-    ESP_LOGI(TAG, "Frame %d done in %d ms", s_state->frame_count, time_ms);
+    //ESP_LOGI(TAG, "Frame %d done in %d ms", s_state->frame_count, time_ms);
+	
+	//uint8_t m_fram_count = s_state->frame_count % CAMERA_CACHE_NUM; //add by wqp 9/11/2018
+	//queue_send(s_state->frame_count); //add by wqp 9/11/2018
+	
     s_state->frame_count++;
     return ESP_OK;
 }
@@ -596,17 +611,18 @@ static void i2s_stop()
 
 static void i2s_run()
 {
-#ifndef _NDEBUG
-    for (int i = 0; i < s_state->dma_desc_count; ++i) {
+//#ifndef _NDEBUG //wqp
+    for (int i = 0; i < s_state->dma_desc_count; ++i) 
+	{
         lldesc_t* d = &s_state->dma_desc[i];
         ESP_LOGV(TAG, "DMA desc %2d: %u %u %u %u %u %u %p %p",
                 i, d->length, d->size, d->offset, d->eof, d->sosf, d->owner, d->buf, d->qe.stqe_next);
         memset(s_state->dma_buf[i], 0, d->length);
     }
-#endif
+//#endif //wqp
 
     // wait for vsync
-    ESP_LOGD(TAG, "Waiting for positive edge on VSYNC");
+    //ESP_LOGD(TAG, "Waiting for positive edge on VSYNC");
 
 	while (gpio_get_level(s_state->config.pin_vsync) == 0) {
         ;
@@ -615,7 +631,7 @@ static void i2s_run()
 	while (gpio_get_level(s_state->config.pin_vsync) != 0) {
         ;
     }
-    ESP_LOGD(TAG, "Got VSYNC");
+    //ESP_LOGD(TAG, "Got VSYNC");
 
     s_state->dma_done = false;
     s_state->dma_desc_cur = 0;
@@ -645,7 +661,8 @@ static void IRAM_ATTR signal_dma_buf_received(bool* need_yield)
     s_state->dma_received_count++;
     BaseType_t higher_priority_task_woken;
     BaseType_t ret = xQueueSendFromISR(s_state->data_ready, &dma_desc_filled, &higher_priority_task_woken);
-    if (ret != pdTRUE) {
+    if (ret != pdTRUE) 
+	{
         ESP_EARLY_LOGW(TAG, "queue send failed (%d), dma_received_count=%d", ret, s_state->dma_received_count);
     }
     *need_yield = (ret == pdTRUE && higher_priority_task_woken == pdTRUE);
@@ -657,10 +674,12 @@ static void IRAM_ATTR i2s_isr(void* arg)
     bool need_yield;
     signal_dma_buf_received(&need_yield);
     ESP_EARLY_LOGV(TAG, "isr, cnt=%d", s_state->dma_received_count);
-    if (s_state->dma_received_count == s_state->height * s_state->dma_per_line) {
+    if (s_state->dma_received_count == s_state->height * s_state->dma_per_line) 
+	{
         i2s_stop();
     }
-    if (need_yield) {
+    if (need_yield) 
+	{
         portYIELD_FROM_ISR();
     }
 }
@@ -691,11 +710,14 @@ static size_t get_fb_pos()
 
 static void IRAM_ATTR dma_filter_task(void *pvParameters)
 {
-    while (true) {
+    /*while (true) 
+	{
         size_t buf_idx;
-        xQueueReceive(s_state->data_ready, &buf_idx, portMAX_DELAY);
-        if (buf_idx == SIZE_MAX) {
+        BaseType_t err = xQueueReceive(s_state->data_ready, &buf_idx, portMAX_DELAY);
+        if (buf_idx == SIZE_MAX) 
+		{
             s_state->data_size = get_fb_pos();
+			//printf("get_fb_pos:%d\r\n",s_state->data_size);
             xSemaphoreGive(s_state->frame_ready);
             continue;
         }
@@ -707,7 +729,29 @@ static void IRAM_ATTR dma_filter_task(void *pvParameters)
         (*s_state->dma_filter)(buf, desc, pfb);
         s_state->dma_filtered_count++;
         ESP_LOGV(TAG, "dma_flt: flt_count=%d ", s_state->dma_filtered_count);
-    }
+    }*/
+
+   	static uint8_t i = 0;
+	while (true) 
+	{
+	    size_t buf_idx;
+	    xQueueReceive(s_state->data_ready, &buf_idx, portMAX_DELAY);
+	    if (buf_idx == SIZE_MAX) 
+		{
+	        i = (i + 1) % CAMERA_CACHE_NUM;
+	        s_state->data_size = get_fb_pos();
+	        xSemaphoreGive(s_state->frame_ready);
+	        continue;
+    	}
+
+	    uint32_t* pfb = s_state->fb[i] + get_fb_pos()/4;
+	    const dma_elem_t* buf = s_state->dma_buf[buf_idx];
+	    lldesc_t* desc = &s_state->dma_desc[buf_idx];
+	    ESP_LOGV(TAG, "dma_flt: pos=%d ", get_fb_pos()/4);
+	    (*s_state->dma_filter)(buf, desc, pfb);
+	    s_state->dma_filtered_count++;
+	    ESP_LOGV(TAG, "dma_flt: flt_count=%d ", s_state->dma_filtered_count);
+	}
 }
 
 static void IRAM_ATTR dma_filter_grayscale(const dma_elem_t* src, lldesc_t* dma_desc, uint8_t* dst)
@@ -772,7 +816,7 @@ static void IRAM_ATTR dma_filter_jpeg(const dma_elem_t* src, lldesc_t* dma_desc,
 static camera_pixelformat_t s_pixel_format;
 void wifi_camera_init()
 {
-#if 0
+#if 0   
 	camera_config_t config = {
         .ledc_channel = LEDC_CHANNEL_0,
         .ledc_timer = LEDC_TIMER_0,
@@ -793,7 +837,7 @@ void wifi_camera_init()
         .pin_reset = CONFIG_RESET,
         .xclk_freq_hz = CONFIG_XCLK_FREQ,
     };
-#else
+#else   //esp-krover-kit
 	camera_config_t config = {
 			.ledc_channel = LEDC_CHANNEL_0,
 			.ledc_timer = LEDC_TIMER_0,
@@ -812,28 +856,34 @@ void wifi_camera_init()
 			.pin_sscb_sda = 26,
 			.pin_sscb_scl = 27,
 			.pin_reset = 0,
-			.xclk_freq_hz = CONFIG_XCLK_FREQ,
+			.xclk_freq_hz = 24000000,//CONFIG_XCLK_FREQ,
 		};
 #endif			
 
     camera_model_t camera_model;
     esp_err_t err = camera_probe(&config, &camera_model);
-    if (err != ESP_OK) {
+    if (err != ESP_OK) 
+	{
         ESP_LOGE(TAG, "Camera probe failed with error 0x%x", err);
         return;
     }
-	if (camera_model == CAMERA_OV2640) {
+	
+	if (camera_model == CAMERA_OV2640) 
+	{
         ESP_LOGI(TAG, "Detected OV2640 camera, using JPEG format");
         s_pixel_format = CAMERA_PF_JPEG;
-        config.frame_size = CAMERA_FS_VGA;
+        config.frame_size = CAMERA_FS_VGA; //CAMERA_FS_QVGA CAMERA_FS_VGA   change by wqp 
         config.jpeg_quality = 5;
-    } else {
+    } else 
+	{
         ESP_LOGE(TAG, "Camera not supported");
         return;
     }
+	
     config.pixel_format = s_pixel_format;
     err = camera_init(&config);
-    if (err != ESP_OK) {
+    if (err != ESP_OK) 
+	{
         ESP_LOGE(TAG, "Camera init failed with error 0x%x", err);
         return;
     }

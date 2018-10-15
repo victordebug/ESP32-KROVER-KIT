@@ -37,6 +37,8 @@
 #include "Awifi.h"
 #include "JpegRTPDeal.h"
 
+#include "camera_lcd.h"
+
 #define version 2
 #define padding 0
 #define extend  0
@@ -45,7 +47,6 @@
 
 unsigned short serial_number;
 int32_t time_stamp = 100000;
-
 
 int32_t TimeStamp()
 {
@@ -159,6 +160,9 @@ err_t JpegSocketClose()
 }
 
 uint16_t PicSeq = 1; 
+int jj = 0;
+//uint32_t m_str[320];
+//long int flag_index = 0;
 
 void SendPic ()
 {
@@ -166,25 +170,42 @@ void SendPic ()
 	uint8_t pdu1[4] = { 0X24, 0X00, 0X00, 0X00 };
 	uint8_t pdu2[4] = { 0X24, 0X00, 0X05, 0X84 };
  	uint8_t ID[13] = {Device_id};
-	
-	err_t err = camera_run();
-	size_t PicLen = camera_get_data_size();
-	size_t PicLenCnt = PicLen;
-	ESP_LOGD("JpegPIC", "data len %d",PicLen);
-	uint8_t *fb_p = camera_get_fb();
 
-	if(err == ERR_OK)
-	{
-		TS = TimeStamp();	     //一张图片时间戳相同
+	err_t err = camera_run();
+
+	/*size_t PicLen = camera_get_data_size();
+	size_t PicLenCnt = PicLen;
+	//ESP_LOGD("JpegPIC", "data len %d",PicLen);
+	uint32_t *fb_p = camera_get_fb_i((jj++)%5);
+
+	printf("fb_p:0x%x\r\n",*fb_p);*/
 /*
-		send(Jpegsock_fd,pdu2,4,0);   //发送第一个数据包         包含Deviceid
+	flag_index ++;
+	if (flag_index >= 320)
+	{
+		for (flag_index=0; flag_index<320; flag_index++)
+		{
+			//if (flag_index%320 == 0)    printf("\r\n");
+			printf("0x%x,",m_str[flag_index]);
+		}
+		printf("\r\n");
+		flag_index = 0;
+	}
+	m_str[flag_index] = *fb_p;
+*/
+
+/*	if(err == ERR_OK)
+	{
+		TS = TimeStamp();	*/     
+/*
+		send(Jpegsock_fd,pdu2,4,0);   
 		send(Jpegsock_fd,RTPHead(TS,0,0,PicSeq++),12,0);
 		send(Jpegsock_fd,Device_id,13,0);
 		send(Jpegsock_fd,fb_p,1387 ,0);	
 		PicLenCnt -= 1387;
 		fb_p += 1387;
 */
-		while(PicLenCnt > 1400)
+/*		while(PicLenCnt > 1400)    
 		{
 			send(Jpegsock_fd,pdu2,4,0);
 			send(Jpegsock_fd,RTPHead(TS,0,0
@@ -198,22 +219,21 @@ void SendPic ()
 		pdu1[3] = (((PicLen+13) % 1400) +12) % 256;
 
 		send(Jpegsock_fd,pdu1,4,0);
-		send(Jpegsock_fd,RTPHead(TS,1,0,PicSeq++),12,0);   //最后一个数据包设置mark为1
+		send(Jpegsock_fd,RTPHead(TS,1,0,PicSeq++),12,0); 
 		send(Jpegsock_fd,fb_p,PicLenCnt ,0);
 
 
-		send(Jpegsock_fd,ID,13,0);  //发送ID
+		send(Jpegsock_fd,ID,13,0); 
 
 	}
 	else
 	{
 		ESP_LOGE("camera","camera error");
 	}
-
-	ESP_LOGD("JpegPIC","send Pic OK");
+*/
+	//ESP_LOGD("JpegPIC","send Pic OK");
 
 }
-
 
 void PicSend(void *pvParameters)
 {
@@ -226,20 +246,23 @@ void PicSend(void *pvParameters)
 
 	for(;;)
 	{	
-		uxBits = xEventGroupWaitBits(
-					PicEventGroup,		// 
-					PicSendEevent,	   	 	// 
-					pdTRUE,				// 在返回时设置位被清除
-					pdFALSE,			// 不用所有位都被置位就会返回
+		printf("wait send pic...\r\n");  //add for debug
+		/*uxBits = xEventGroupWaitBits(
+					PicEventGroup,	
+					PicSendEevent,	   	 
+					pdTRUE,				
+					pdFALSE,			
 					portMAX_DELAY );	// Wait a maximum
 					
-		if((uxBits & PicSendEevent) == PicSendEevent)
+		if((uxBits & PicSendEevent) == PicSendEevent)*/
 		{
 			while(1)
 			{
 				SendPic();
+				//vTaskDelay(2000);  //add for debug
 			}
 		}
+		
     }
 	vEventGroupDelete(PicEventGroup);
 	vTaskDelete(NULL);

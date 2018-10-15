@@ -17,6 +17,8 @@
 #include "esp_err.h"
 #include "driver/ledc.h"
 
+#define _NDEBUG
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -92,6 +94,7 @@ typedef struct {
  * @return ESP_OK if camera was detected
  */
 esp_err_t camera_probe(const camera_config_t* config, camera_model_t* out_camera_model);
+
 
 /**
  * @brief Initialize the camera

@@ -30,8 +30,6 @@
 #include "sdkconfig.h"
 
 
-
-static const char * TAG = "app_main";
 extern uint8_t* BLE_Recv_Buffer;
 
 void vApplicationIdleHook( void )
@@ -40,14 +38,15 @@ void vApplicationIdleHook( void )
 }
 
 
-extern "C" void app_init()
+void app_init()
 {
     nvs_flash_init();
 	GPIO_Init();
-	uart_init();
- 	ble_init();
-	esp_err_t wifi_init_err = initialise_wifi();
-	
+	//uart_init();
+ 	//ble_init();
+	//esp_err_t wifi_init_err = initialise_wifi();
+
+
 #if CONFIG_USE_LCD
     app_lcd_init();
 #endif
@@ -65,28 +64,34 @@ extern "C" void app_init()
 	memset(BLE_recv_data,0,50);
 	BLE_Recv_Buffer = BLE_recv_data;
 
-	ESP_LOGI("app_main", "creat blesend task ");
-	BaseType_t task_ret = xTaskCreate(&ble_tasksend, "BLE_send", 2048, NULL, 5, NULL);
-	if(task_ret != pdPASS)
+	//ESP_LOGI("app_main", "creat blesend task ");
+	//BaseType_t task_ret = xTaskCreate(&ble_tasksend, "BLE_send", 2048, NULL, 5, NULL);
+	//if(task_ret != pdPASS)
 	{
-		ESP_LOGE("app_main", "creat bletask failed");
+		//ESP_LOGE("app_main", "creat bletask failed");
 	}
 	
-	ESP_LOGI("app_main", "creat blemanage task ");
-	BaseType_t taskmanage_ret = xTaskCreate(&ble_taskmanage, "ble_taskmanage", 2048, NULL, 5, NULL);
-	if(taskmanage_ret != pdPASS)
+	//ESP_LOGI("app_main", "creat blemanage task ");
+	//BaseType_t taskmanage_ret = xTaskCreate(&ble_taskmanage, "ble_taskmanage", 2048, NULL, 5, NULL);
+	//if(taskmanage_ret != pdPASS)
 	{		
-		ESP_LOGE("app_main", "creat blemanagetask failed");
+		//ESP_LOGE("app_main", "creat blemanagetask failed");
 	}
 
-	ESP_LOGI("app_main", "creat period task ");
-	xTaskCreate(&period_task, "period_task", 2048, NULL, 5, NULL);
+	//ESP_LOGI("app_main", "creat period task ");
+	//xTaskCreate(&period_task, "period_task", 2048, NULL, 5, NULL);
 
 	ESP_LOGI("app_main", "creat PicSend task ");
-	xTaskCreate(&PicSend, "PicSend", 2048, NULL, 9, NULL);
+	//xTaskCreate(&PicSend, "PicSend", 2048, NULL, 9, NULL); //9
+	xTaskCreatePinnedToCore(&PicSend, "PicSend", 2048, NULL, 3, NULL, 1); //9
+
+#if CONFIG_USE_LCD
+	ESP_LOGI("app_main", "Starting app_lcd_task...");
+	xTaskCreatePinnedToCore(&app_lcd_task, "app_lcd_task", 2048, NULL, 4, NULL, 0);
+#endif
 
 
-	if(wifi_init_err == ESP_OK)
+/*	if(wifi_init_err == ESP_OK)
 	{
 		ESP_LOGI("app_main", "creat UDP_recv task ");
 		xTaskCreate(&AUDP_recv, "AUDP_recv", 2048, NULL, 5, NULL);		
@@ -94,14 +99,11 @@ extern "C" void app_init()
 		ESP_LOGI("app_main", "creat UDP_send task ");
 		xTaskCreate(&AUDP_send, "AUDP_send", 2048, NULL, 8, NULL);	
 	}
-
-#if CONFIG_USE_LCD
-		ESP_LOGD(TAG, "Starting app_lcd_task...");
-		xTaskCreatePinnedToCore(&app_lcd_task, "app_lcd_task", 4096, NULL, 4, NULL, 0);
-#endif
-
+*/
 
 	ESP_LOGI("app_main", "creat task end ");
+	//ESP_LOGI("app_main", "task stack: %d", uxTaskGetStackHighWaterMark(NULL));
+
 
 }
 
